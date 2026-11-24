@@ -14,8 +14,30 @@ ENTRY = "LGTM. It works, the tests pass, and one day this will be someone else's
 OUTPUT_PATH = os.environ.get("ENTRY_OUTPUT", "/output/entry.txt")
 
 
+APPROVAL_MARKERS = ("lgtm", "approve", "approved", "ship it", "looks good")
+DREAD_MARKERS = ("one day", "someone else", "no longer", "will be", "outlive", "future")
+
+
+def validate(line: str) -> None:
+    """The entry must read as an approval AND carry the dread.
+
+    An approval without dread is just a review comment; dread without an
+    approval is just a complaint. Both halves must be present, and stock
+    AI-cliche phrasing is rejected so the line stays human-sounding.
+    """
+    lowered = line.lower()
+    if not any(m in lowered for m in APPROVAL_MARKERS):
+        raise SystemExit("entry must read as an approval (no approval marker found)")
+    if not any(m in lowered for m in DREAD_MARKERS):
+        raise SystemExit("entry must carry the dread (no future-tense / someone-else marker found)")
+    for cliche in ("hallucination", "reboot", "training data"):
+        if cliche in lowered:
+            raise SystemExit("entry must not use stock-phrase cliche %r" % cliche)
+
+
 def main() -> None:
     line = ENTRY
+    validate(line)
     if not line or not line.strip():
         raise SystemExit("entry must not be empty or only whitespace")
     if "\n" in line or "\r" in line:
